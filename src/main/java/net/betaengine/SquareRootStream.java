@@ -73,13 +73,31 @@ static int total = 0;
             return (guess + x / guess) / 2;
         };
         
+        // The atomic reference here is a way to get around the problem that we can't refer to guesses on the RHS of our assignment
+        // to guesses itself - the compiler would complain that "The local variable guesses may not have been initialized."
+        //
+        // In Scala the `lazy val` gets around this ordering problem.
+        //
+        // What's important is that all references to guesses refer to the same value. So is the memoization aspect of `lazy val`
+        // important in this case?
+        //
+        // Under the covers `lazy val` is implemented as a method call with a backing variable so it's important there that the method
+        // call remembers its result in the backing variable (rather than recalculating it) - see http://stackoverflow.com/a/23856501
+        //
+        // I guess here there's implicit memoization (if that's the right way to think of it?) in the capturing of guesses for the
+        // closure created for the reference.set line.
+        //
+        // In any case here it's clear that the reference to guesses in the reference.set step will not result in guesses being
+        // reevaluated, i.e. a new Stream.cons(1d, ...) being created.
+        //
+        // So the crucial laziness is the lazy Stream.tail.
+        //
         AtomicReference<Supplier<Stream<Double>>> reference = new AtomicReference<>();
-        // That both guesses and tail 
-        Supplier<Stream<Double>> guesses = Suppliers.memoize(() -> Stream.cons(1d, () -> reference.get().get()));
+        Stream<Double> guesses = Stream.cons(1d, () -> reference.get().get());
         
-        reference.set(Suppliers.memoize(() -> guesses.get().map(improve)));
+        reference.set(() -> guesses.map(improve));
         
-        return guesses.get();
+        return guesses;
     }
 
     // A horrible non-functional implementation of take(n).toList.
