@@ -84,8 +84,10 @@ static int total = 0;
         // Under the covers `lazy val` is implemented as a method call with a backing variable so it's important there that the method
         // call remembers its result in the backing variable (rather than recalculating it) - see http://stackoverflow.com/a/23856501
         //
-        // I guess here there's implicit memoization (if that's the right way to think of it?) in the capturing of guesses for the
-        // closure created for the reference.set line.
+        // We do capture guesses in the closure created for the reference.set line. So we do hang onto the value in order to use it
+        // again later but I wouldn't call this memoization in the sense of "an optimization technique used primarily to speed up
+        // computer programs by storing the results of expensive function calls and returning the cached result when the same inputs
+        // occur again." (Wikipedia).
         //
         // In any case here it's clear that the reference to guesses in the reference.set step will not result in guesses being
         // reevaluated, i.e. a new Stream.cons(1d, ...) being created.
